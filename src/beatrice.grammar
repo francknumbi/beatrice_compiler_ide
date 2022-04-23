@@ -1,0 +1,181 @@
+Package compilateur;
+
+Helpers
+	signes = '+'|'-';
+	chiffre = ['0'..'9'];
+	all_caractere =[0 .. 65535];
+	//valeur_byte = ['0'..'255'];
+	lettre = ['a'..'z'];
+	lettres = lettre+;
+	chaine_caractere = '"' (lettre* chiffre*) | lettre | chiffre* lettre* '"';
+	underscore = '_';
+	tout_caractere = [0x0 .. 0xfffff]+;
+
+Tokens
+
+	algorithme = 'algorithme';
+	variables = 'variables';
+	variable = 'variable';
+	const = 'const';
+	debut = 'debut';
+	fin = 'fin';
+	operateur_modulo = 'mod';
+	entier = 'entier';
+	reel = 'reel';
+	byte = 'byte';
+	def = 'en';
+	ecriture = 'ecrire';
+	lecture = 'lire';
+	si = 'si';
+	sinon = 'sinon';
+	sinonsi = 'sinonsi';
+	alors = 'alors';
+	finsi = 'finsi';
+	nombre_entier = chiffre+;
+	nombre_reel = chiffre+ '.' chiffre+;
+	caractere = 'caractere';
+	caracteres = '"'tout_caractere'"';
+	identifiant = lettres|lettre ; //underscore? ((lettre*|chiffre*)|(chiffre*|lettre*));
+	moins = '-';
+	plus = '+';
+	mult = '*';
+	div = '/';
+	puissance = '^';
+	operateur_superieur = '>';
+	operateur_inferieur = '<';
+	operateur_superieur_egal = '>=';
+	operateur_inferieur_egal = '=>';
+	operateur_egal = '=';
+	operateur_different = '<>';
+	operateur_et = 'et';
+	operateur_ou = 'ou';
+	operateur_affectation = '<--';
+	
+	concat = '&';
+	separateur = ',';
+	parenthese_o = '(';
+	parenthese_f = ')';
+	commentaire_ligne = '//'tout_caractere;
+	commentaire_multiligne = '/*' (lettres | lettre)  '*/';
+	blanc = (' ' | 13 | 10 | 9)+;
+
+Ignored Tokens
+	commentaire_multiligne,
+	commentaire_ligne,
+	blanc;
+
+Productions
+
+	
+
+	programme = 
+		{algorithme} nom_algorithme entete debut instructions* fin;
+
+	nom_algorithme = 
+		algorithme identifiant;
+
+	entete = 
+		{vide} |
+		{definition} variables variable_declaration;
+
+	variable_declaration = 
+		{single} identifiant suffixe |
+		{sequence} identifiant suffixe? def_add+;
+	
+	def_add = 
+		prefixe_compose suffixe;
+
+	prefixe_compose = 
+		prefixe+;
+
+	prefixe = 
+		separateur identifiant; //b
+
+	suffixe = 
+		def type;
+
+	type = 
+		{caractere} caractere |
+		{entier} entier |
+		{byte} byte |
+		{reel} reel;
+
+
+	instructions = 
+
+		{afficher} print |
+		{ecriture} input |
+		{conditionnelle} structure_conditionnelle |
+		affectation;
+
+	affectation =
+			identifiant operateur_affectation express;
+
+	express =
+			facteur |
+			{addition} express plus facteur |
+			{soustraction} express moins facteur;
+
+	facteur = 
+			{modulo}facteur operateur_modulo terme |
+			{terme} terme |
+			{multiplication} facteur mult terme |
+			{division} facteur div terme |
+			{puissance} facteur puissance terme;
+			
+
+	terme = 
+			{valeur_entiere} nombre_entier |
+			{valeur_reel} nombre_reel |
+			{identifiant} identifiant |
+			{chaine} caracteres |
+			{concatenation} message_add message+ |
+			{parentheses} parenthese_o express parenthese_f;
+
+	input = 
+			lecture identifiant prefixe*;
+
+	print = 
+			{sequence} ecriture message_add message+|
+			{single} ecriture message_add;
+
+	message =
+			concat message_add;
+
+	message_add = 
+			identifiant |
+			{chaine} caracteres;
+
+	structure_conditionnelle = 
+			{simple} forme_simple | 
+			{complete} forme_complete | 
+			{globale} forme_globale;
+
+	forme_simple = si condition alors instructions* finsi;
+	
+	forme_complete = si condition alors instructions* condition_additionnelles finsi;
+
+	forme_globale = si condition alors instructions* P.sinonsi+ condition_additionnelles? finsi;
+
+	condition_additionnelles = sinon instructions*;
+	
+	sinonsi = T.sinonsi condition alors instructions*;
+
+	condition = 
+			{simple} condition_simple | 
+			{compose} condition_compose;
+
+	condition_simple = 
+			{inferieur} [gauche]:express operateur_inferieur [droite]:express | 
+			{superieur}	[gauche]:express operateur_superieur [droite]:express |
+			{different} [gauche]:express operateur_different [droite]:express |
+			{egal}	 	[gauche]:express operateur_egal [droite]:express |
+			{supegal}	[gauche]:express operateur_superieur_egal [droite]:express |
+			{infegal}	[gauche]:express operateur_inferieur_egal [droite]:express |
+			{parenthese}parenthese_o condition_simple parenthese_f; 
+	
+	condition_compose = 
+			{et}	[gauche]:condition_simple operateur_et [droite]:condition_simple |
+			{ou}	[gauche]:condition_simple operateur_ou [droite]:condition_simple |
+						parenthese_o condition_compose parenthese_f;
+	

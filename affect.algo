@@ -1,0 +1,9 @@
+algorithme affectation 
+
+variables a en byte
+
+debut
+	a <--5
+	a <-- a + 1
+	ecrire a
+fin
