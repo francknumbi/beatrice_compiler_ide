@@ -3,11 +3,12 @@ Package compilateur;
 Helpers
 	signes = '+'|'-';
 	chiffre = ['0'..'9'];
-	all_caractere =[0 .. 65535];
+	all_caractere =[0 .. 127];
 	//valeur_byte = ['0'..'255'];
-	lettre = ['a'..'z'];
+	lettre = ['a'..'z']|['A'..'Z'];
 	lettres = lettre+;
-	chaine_caractere = '"' (lettre* chiffre*) | lettre | chiffre* lettre* '"';
+	guillemet = '"';
+	chaine_caractere =  [all_caractere - [''' + ['\' + [10 + 13]]]] ;
 	underscore = '_';
 	tout_caractere = [0x0 .. 0xfffff]+;
 
@@ -34,7 +35,7 @@ Tokens
 	nombre_entier = chiffre+;
 	nombre_reel = chiffre+ '.' chiffre+;
 	caractere = 'caractere';
-	caracteres = '"'tout_caractere'"';
+	caracteres = '"'chaine_caractere+'"';
 	identifiant = lettres|lettre ; //underscore? ((lettre*|chiffre*)|(chiffre*|lettre*));
 	moins = '-';
 	plus = '+';

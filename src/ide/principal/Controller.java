@@ -1,12 +1,8 @@
 package ide.principal;
 
-import compilateur.codeGenerateur.CodeGenerateur;
-import compilateur.lexer.Lexer;
 import compilateur.lexer.LexerException;
-import compilateur.node.Start;
-import compilateur.parser.Parser;
 import compilateur.parser.ParserException;
-import compilateur.semantic.Semantic;
+import compilateur.principale.Compilateur;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -18,6 +14,10 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.HashMap;
 
 public class Controller {
@@ -32,9 +32,9 @@ public class Controller {
     @FXML
     private Slider s;
     @FXML
-    private TextArea code_Source;
+    private TextArea code_Source, textAreaResultat;
     @FXML
-    private TabPane tabbedEditors;
+    private TabPane tabbedEditors, tabConsole;
 
     @FXML
     private ImageView executer;
@@ -153,23 +153,67 @@ public class Controller {
         Contenu_Presse_Papier.putString(texte);
         presse_Papier.setContent(Contenu_Presse_Papier);
     }
+    public void onClick_Deboguer(ActionEvent e){
+        String texte = code_Source.getSelectedText();
+        final Clipboard presse_Papier = Clipboard.getSystemClipboard();
+        final ClipboardContent Contenu_Presse_Papier = new ClipboardContent();
+
+        Contenu_Presse_Papier.putString(texte);
+        presse_Papier.setContent(Contenu_Presse_Papier);
+    }
+    public void onClick_Arreter(ActionEvent e){
+        String texte = code_Source.getSelectedText();
+        final Clipboard presse_Papier = Clipboard.getSystemClipboard();
+        final ClipboardContent Contenu_Presse_Papier = new ClipboardContent();
+
+        Contenu_Presse_Papier.putString(texte);
+        presse_Papier.setContent(Contenu_Presse_Papier);
+    }
+
 
     @FXML
-    public void onClick_btn_executer(ActionEvent e) throws ParserException, IOException, LexerException {
+    public void onClick_btn_executer(ActionEvent e) throws ParserException, IOException, LexerException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
         code_Source = (TextArea)tabbedEditors.getSelectionModel().getSelectedItem().getContent();
-        String texte_caractere = code_Source.getText();
-        InputStream texte_byte = new ByteArrayInputStream(texte_caractere.getBytes());
-        System.out.println(texte_byte);
-        Lexer lexical = new Lexer(
-                new PushbackReader(
-                        new InputStreamReader(texte_byte), 1024));
 
-        Parser syntaxique = new Parser(lexical);
-        Start arbre = syntaxique.parse();
-        arbre.apply(new Semantic());
-        arbre.apply(new CodeGenerateur());
+        // APPEL DU COMPILATEUR
+        new Compilateur().demarrerCompilateur(code_Source.getText());
+
+        // REDIRECTION DU FLUX DE SORTIE
+        ByteArrayOutputStream nouvelleSortie = new ByteArrayOutputStream();
+        PrintStream nouveauFluxSortie = new PrintStream(nouvelleSortie);
+        PrintStream ancienneSortie = System.out;
+        System.setOut(nouveauFluxSortie);
+
+        // REDIRECTION DU FLUX D'ENTREE
+        //Object console = System.console()
+        /*ByteArrayInputStream nouvelleEntree = new ByteArrayInputStream();
+        PrintStream nouveauFluxEntree = new PrintStream(nouvelleSortie);
+        InputStream ancienneEntree = System.in;
+        System.setOut(nouveauFluxSortie);*/
+
+        // CHARGEMENT DYNAMIQUE DU FICHIER .CLASS
+        Class <?> classChargee = new URLClassLoader(
+                new URL[]{new File("/home/numbi/Documents/tfc/javafx/beatrice_compiler_ide/").toURI().toURL()}).loadClass("affectation");
+        Method methodePrincipale = classChargee.getDeclaredMethod("main", String[].class);
+        methodePrincipale.invoke(methodePrincipale, new Object[]{new String[0]});
+
+        // VIDER LA SORTIE ET REPLACER LA SORTIE A LA NORMAL
+        System.out.flush();
+        System.setOut(ancienneSortie);
+
+        String sortieConsole = nouvelleSortie.toString();
+
+        // INSERTION TEXT DANS LA CONSOLE
+        textAreaResultat.setText(sortieConsole);
+
+        //System.out.println(methodePrincipale);
+
+        //Afficher le resultat
+
         System.out.println(table_symboles);
+        System.out.println(System.getProperty("user.name"));
         System.out.println("Success");
+
     }
 }

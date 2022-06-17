@@ -14,6 +14,7 @@ public class CodeGenerateur extends DepthFirstAdapter {
 
     //class principale
     private ClassEnv classPrincipale = new ClassEnv();
+
     //methode constructeur
     private CodeAttr constructeur = new CodeAttr();
     //methode principale de la class
@@ -50,6 +51,7 @@ public class CodeGenerateur extends DepthFirstAdapter {
     {
         nomClass = node.getIdentifiant().getText();
         try{
+
             classPrincipale.setClass(new ClassCP(nomClass));
             classPrincipale.setSuperClass(new ClassCP("java/lang/Object"));
             classPrincipale.setSource(new SourceAttr(""));
@@ -75,8 +77,8 @@ public class CodeGenerateur extends DepthFirstAdapter {
                                     new AsciiCP(identifiant), new AsciiCP("F"), new ConstAttr(new FloatCP(1))));
                             break;
                         case "caractere":
-                            //classPrincipale.addField(new Var((short) (RuntimeConstants.ACC_STATIC | RuntimeConstants.ACC_PUBLIC),
-                            //new AsciiCP(identifiant), new AsciiCP("C"), new ConstAttr(new StringCP("null"))));
+                            classPrincipale.addField(new Var((short) (RuntimeConstants.ACC_STATIC | RuntimeConstants.ACC_PUBLIC),
+                            new AsciiCP(identifiant), new AsciiCP("Ljava/lang/String;"), new ConstAttr(new StringCP("null"))));
                             break;
                     }
                 });
@@ -112,6 +114,13 @@ public class CodeGenerateur extends DepthFirstAdapter {
         else if (typeVariableActuelle.equals("entier") | typeVariableActuelle.equals("byte")){
             try {
                 main_methode.addInsn(new Insn(RuntimeConstants.opc_putstatic,new FieldCP(nomClass,identifiant,"I")));
+            } catch (jas.jasError jasError) {
+                jasError.printStackTrace();
+            }
+        }
+        else if (typeVariableActuelle.equals("caractere")){
+            try {
+                main_methode.addInsn(new Insn(RuntimeConstants.opc_putstatic,new FieldCP(nomClass,identifiant,"Ljava/lang/String;")));
             } catch (jas.jasError jasError) {
                 jasError.printStackTrace();
             }
@@ -154,6 +163,21 @@ public class CodeGenerateur extends DepthFirstAdapter {
             jasError.printStackTrace();
         }
     }
+    /**
+     *  PLACER UNE CHAINE DDANS LA PILE
+     */
+
+    public void caseAChaineTerme(AChaineTerme node)
+    {
+        String valeur = node.getCaracteres().getText().replaceAll("\"","");
+        System.out.println(valeur);
+        try{
+            main_methode.addInsn(new Insn(RuntimeConstants.opc_ldc,new StringCP(valeur)));
+        }catch (jas.jasError jasError) {
+            jasError.printStackTrace();
+        }
+    }
+
     /**
      *  PLACER LA VALEUR D'UNE VARIABLE DANS LA PILE
      */
@@ -249,8 +273,6 @@ public class CodeGenerateur extends DepthFirstAdapter {
     {
 
     }
-
-
     /**
      * Affichage d un simple message ou simple identifiant
      */
@@ -286,7 +308,7 @@ public class CodeGenerateur extends DepthFirstAdapter {
                         break;
                     case "caractere":
                         System.out.println("caractere");
-                        main_methode.addInsn(new Insn(RuntimeConstants.opc_getstatic,new FieldCP(nomClass, message,"C")));
+                        main_methode.addInsn(new Insn(RuntimeConstants.opc_getstatic,new FieldCP(nomClass, message,"Ljava/lang/String;")));
                         main_methode.addInsn(new Insn(RuntimeConstants.opc_invokevirtual, new MethodCP("java/io/PrintStream", "println", "(Ljava/lang/String;)V")));
                         break;
                 }
@@ -304,6 +326,40 @@ public class CodeGenerateur extends DepthFirstAdapter {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+    /**
+     * *********** LECTURE D UNE VALEUR
+     */
+    public void outAInput(AInput node)
+    {
+        String identifiant = node.getIdentifiant().getText();
+
+        String type = table_symboles.get(identifiant);
+        System.out.println(type + " "+ identifiant + " FIN");
+        try {
+            main_methode.addInsn(new Insn(RuntimeConstants.opc_new, new ClassCP("java/util/Scanner")));
+            main_methode.addInsn(new Insn(RuntimeConstants.opc_dup));
+            main_methode.addInsn(new Insn(RuntimeConstants.opc_getstatic, new FieldCP("java/lang/System","in","Ljava/io/InputStream;")));
+            main_methode.addInsn(new Insn(RuntimeConstants.opc_invokespecial, new MethodCP("java/util/Scanner", "<init>", "(Ljava/io/InputStream;)V")));
+            switch (type) {
+
+                case "entier":
+                case "byte":
+                    main_methode.addInsn(new Insn(RuntimeConstants.opc_invokevirtual, new MethodCP("java/util/Scanner","nextInt","()I")));
+                    main_methode.addInsn(new Insn(RuntimeConstants.opc_putstatic,new FieldCP(nomClass,identifiant,"I")));
+                break;
+                case "reel":
+                    main_methode.addInsn(new Insn(RuntimeConstants.opc_invokevirtual, new MethodCP("java/util/Scanner","nextFloat","()F")));
+                    main_methode.addInsn(new Insn(RuntimeConstants.opc_putstatic,new FieldCP(nomClass,identifiant,"F")));
+                break;
+                case "caractere":
+                    main_methode.addInsn(new Insn(RuntimeConstants.opc_invokevirtual, new MethodCP("java/util/Scanner","nextLine","()Ljava/lang/String;")));
+                    main_methode.addInsn(new Insn(RuntimeConstants.opc_putstatic,new FieldCP(nomClass,identifiant,"Ljava/lang/String;")));
+                break;
+            }
+        } catch (jasError e) {
+            throw new RuntimeException(e);
         }
     }
 

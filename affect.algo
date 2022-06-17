@@ -1,9 +1,12 @@
 algorithme affectation 
 
-variables a en byte
+variables a en byte, b en caractere
 
 debut
-	a <--5
-	a <-- a + 1
+	ecrire "Beatrice_compiler"
+	a <-- 45
+	lire b
+	ecrire b
+	a <-- a mod 10
 	ecrire a
 fin

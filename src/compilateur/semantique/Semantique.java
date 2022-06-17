@@ -1,4 +1,4 @@
-package compilateur.semantic;
+package compilateur.semantique;
 
 import compilateur.analysis.DepthFirstAdapter;
 import compilateur.node.*;
@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Semantic extends DepthFirstAdapter {
+public class Semantique extends DepthFirstAdapter {
 
     private HashMap<String,String> table_symboles = new HashMap<String,String>();
     private ArrayList<String> listeVariables = new ArrayList<>();
