@@ -19,12 +19,16 @@ public class CodeGenerateur extends DepthFirstAdapter {
     private CodeAttr constructeur = new CodeAttr();
     //methode principale de la class
     private CodeAttr main_methode = new CodeAttr();
-
+    int labelNumber =0;
+    Label labelNom;
     private String nomClass;
-
+    public static String classNom;
     private String typeVariableActuelle =null;
+    private boolean conditionnelle = true;
 
     private HashMap<String,String> table_symboles = Controller.table_symboles;
+
+
 
     /**
      *    definition du constructeur
@@ -38,7 +42,9 @@ public class CodeGenerateur extends DepthFirstAdapter {
                     "java/lang/Object", "<init>", "()V")));
             constructeur.addInsn(new Insn(RuntimeConstants.opc_return));
 
-            main_methode.setStackSize((short) 100);
+
+            main_methode.setVarSize((short) 10);
+            main_methode.setStackSize((short) 9);
         } catch (jas.jasError jasError) {
             jasError.printStackTrace();
         }
@@ -94,10 +100,14 @@ public class CodeGenerateur extends DepthFirstAdapter {
      *********************************************************/
 
 
-    /**
-     *  AFFECTATIONS
-     */
+    /*******************************************************
+     *  ******************    AFFECTATIONS
+     *******************************************************/
     public void inAAffectation(AAffectation node)
+    {
+        typeVariableActuelle = table_symboles.get(node.getIdentifiant().getText());
+    }
+    public void inAIdentifiantTerme(AIdentifiantTerme node)
     {
         typeVariableActuelle = table_symboles.get(node.getIdentifiant().getText());
     }
@@ -127,10 +137,10 @@ public class CodeGenerateur extends DepthFirstAdapter {
         }
         typeVariableActuelle =null;
     }
-    /**
-     *  PLACER LA VALEUR ENTIERE DANS LA PILE
-     */
-    public void caseAValeurEntiereTerme(AValeurEntiereTerme node)  {
+    /*************************************************************
+     **************  PLACER LA VALEUR ENTIERE DANS LA PILE
+     *************************************************************/
+    public void outAValeurEntiereTerme(AValeurEntiereTerme node)  {
 
         if (typeVariableActuelle != null && typeVariableActuelle.equals("reel")){
             float valeur = Float.parseFloat(node.getNombreEntier().getText());
@@ -151,9 +161,9 @@ public class CodeGenerateur extends DepthFirstAdapter {
             }
         }
     }
-    /**
-     *  PLACER LA VALEUR DECIMALE DANS LA PILE
-     */
+    /**********************************************************************
+     ********************* PLACER LA VALEUR DECIMALE DANS LA PILE
+     **********************************************************************/
     public void outAValeurReelTerme(AValeurReelTerme node)
     {
         float valeur = Float.parseFloat(node.getNombreReel().getText());
@@ -163,9 +173,9 @@ public class CodeGenerateur extends DepthFirstAdapter {
             jasError.printStackTrace();
         }
     }
-    /**
-     *  PLACER UNE CHAINE DDANS LA PILE
-     */
+    /***********************************************************
+     *****************  PLACER UNE CHAINE DANS LA PILE
+     ***********************************************************/
 
     public void caseAChaineTerme(AChaineTerme node)
     {
@@ -178,16 +188,16 @@ public class CodeGenerateur extends DepthFirstAdapter {
         }
     }
 
-    /**
-     *  PLACER LA VALEUR D'UNE VARIABLE DANS LA PILE
-     */
+    /*******************************************************************
+     ***************  PLACER LA VALEUR D'UNE VARIABLE DANS LA PILE
+     *******************************************************************/
     public void outAIdentifiantTerme(AIdentifiantTerme node)
     {
         String type = table_symboles.get(node.getIdentifiant().getText());
         String identifiant = node.getIdentifiant().getText();
-        System.out.println("ouiiiiiiiiiiiii");
+
         if (type != null && type.equals("reel")){
-            System.out.println("nonnnnnnnnnnn");
+
             try {
                 main_methode.addInsn(new Insn(RuntimeConstants.opc_getstatic,new FieldCP(nomClass, identifiant, "F")));
             } catch (jas.jasError jasError) {
@@ -195,7 +205,7 @@ public class CodeGenerateur extends DepthFirstAdapter {
             }
         }
         else if(type.equals("entier") | type.equals("byte")){
-            System.out.println("ouiiiiiiiiiiiii");
+
             try {
                 if(typeVariableActuelle.equals("reel")){
                     main_methode.addInsn(new Insn(RuntimeConstants.opc_getstatic,new FieldCP(nomClass, identifiant, "I")));
@@ -210,9 +220,9 @@ public class CodeGenerateur extends DepthFirstAdapter {
         }
         System.out.println("identifiant = "+identifiant.length() +" type ="+type);
     }
-    /**
-     *    OPERATIONS ARITHMETIQUES
-     */
+    /***************************************************
+     ******************   OPERATIONS ARITHMETIQUES
+     ***************************************************/
     public void outAAdditionExpress(AAdditionExpress node)
     {
         try {
@@ -273,9 +283,9 @@ public class CodeGenerateur extends DepthFirstAdapter {
     {
 
     }
-    /**
-     * Affichage d un simple message ou simple identifiant
-     */
+    /*******************************************************************************
+     ***************** Affichage d un simple message ou simple identifiant
+     *******************************************************************************/
     public void inASinglePrint(ASinglePrint node)
     {
         try {
@@ -287,46 +297,64 @@ public class CodeGenerateur extends DepthFirstAdapter {
     }
     public void outASinglePrint(ASinglePrint node)
     {
+
         String message = node.getMessageAdd().toString().replaceAll(" ","");
         System.out.println(message);
-        // AFFCHER IDENTIFIANT
-        if(table_symboles.containsKey(message)){
-            try {
-                String type = table_symboles.get(message);
-                switch (type) {
+            // AFFCHER IDENTIFIANT
+        if(conditionnelle){
+            if(table_symboles.containsKey(message)){
+                try {
+                    String type = table_symboles.get(message);
+                    switch (type) {
 
-                    case "entier":
-                    case "byte":
-                        main_methode.addInsn(new Insn(RuntimeConstants.opc_getstatic,new FieldCP(nomClass, message,"I")));
-                        System.out.println("byte entier");
-                        main_methode.addInsn(new Insn(RuntimeConstants.opc_invokevirtual, new MethodCP("java/io/PrintStream", "println", "(I)V")));
-                        break;
-                    case "reel":
-                        System.out.println("relllll");
-                        main_methode.addInsn(new Insn(RuntimeConstants.opc_getstatic,new FieldCP(nomClass, message,"F")));
-                        main_methode.addInsn(new Insn(RuntimeConstants.opc_invokevirtual, new MethodCP("java/io/PrintStream", "println", "(F)V")));
-                        break;
-                    case "caractere":
-                        System.out.println("caractere");
-                        main_methode.addInsn(new Insn(RuntimeConstants.opc_getstatic,new FieldCP(nomClass, message,"Ljava/lang/String;")));
-                        main_methode.addInsn(new Insn(RuntimeConstants.opc_invokevirtual, new MethodCP("java/io/PrintStream", "println", "(Ljava/lang/String;)V")));
-                        break;
+                        case "entier":
+                        case "byte":
+                            main_methode.addInsn(new Insn(RuntimeConstants.opc_getstatic,new FieldCP(nomClass, message,"I")));
+                            System.out.println("byte entier");
+                            main_methode.addInsn(new Insn(RuntimeConstants.opc_invokevirtual, new MethodCP("java/io/PrintStream", "println", "(I)V")));
+                            break;
+                        case "reel":
+                            System.out.println("relllll");
+                            main_methode.addInsn(new Insn(RuntimeConstants.opc_getstatic,new FieldCP(nomClass, message,"F")));
+                            main_methode.addInsn(new Insn(RuntimeConstants.opc_invokevirtual, new MethodCP("java/io/PrintStream", "println", "(F)V")));
+                            break;
+                        case "caractere":
+                            System.out.println("caractere");
+                            main_methode.addInsn(new Insn(RuntimeConstants.opc_getstatic,new FieldCP(nomClass, message,"Ljava/lang/String;")));
+                            main_methode.addInsn(new Insn(RuntimeConstants.opc_invokevirtual, new MethodCP("java/io/PrintStream", "println", "(Ljava/lang/String;)V")));
+                            break;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+            }
+
+            //AFFICHER MESSAGE
+            else {
+                message = node.getMessageAdd().toString().replaceAll("\"","");
+                try {
+                    main_methode.addInsn(new Insn(RuntimeConstants.opc_ldc, new StringCP(message)));
+                    main_methode.addInsn(new Insn(RuntimeConstants.opc_invokevirtual, new MethodCP("java/io/PrintStream", "println", "(Ljava/lang/String;)V")));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
-
-        //AFFICHER MESSAGE
+        //INSTRUCTIONS D UN LABEL MARQUANT  UNE STRUCTURE CONDITIONNELLE
         else {
-            message = node.getMessageAdd().toString().replaceAll("\"","");
             try {
+
+                message = node.getMessageAdd().toString().replaceAll("\"","");
+                main_methode.addInsn(labelNom);
                 main_methode.addInsn(new Insn(RuntimeConstants.opc_ldc, new StringCP(message)));
                 main_methode.addInsn(new Insn(RuntimeConstants.opc_invokevirtual, new MethodCP("java/io/PrintStream", "println", "(Ljava/lang/String;)V")));
-            } catch (Exception e) {
-                e.printStackTrace();
+
+            } catch (jasError e) {
+                throw new RuntimeException(e);
             }
+
         }
+
     }
     /**
      * *********** LECTURE D UNE VALEUR
@@ -362,6 +390,43 @@ public class CodeGenerateur extends DepthFirstAdapter {
             throw new RuntimeException(e);
         }
     }
+    /***************************************************************
+     * *********** INSTRUCTIONS CONDITIONNELLES
+     **************************************************************/
+    public void outASimpleStructureConditionnelle(ASimpleStructureConditionnelle node)
+    {
+
+    }
+    /**
+     * OPERATEUR D INFERIORITE
+     */
+    public void outAInferieurConditionSimple(AInferieurConditionSimple node)
+    {
+        try {
+            labelNumber +=1;
+            labelNom = new Label("Label"+labelNumber);
+            conditionnelle =false;
+            main_methode.addInsn(new Insn(RuntimeConstants.opc_if_icmpgt,labelNom));
+        } catch (jasError e) {
+            throw new RuntimeException(e);
+        }
+    }
+    /**
+     * OPERATEUR D EGALITE
+     */
+    public void outAEgalConditionSimple(AEgalConditionSimple node)
+    {
+        try {
+            labelNumber +=1;
+            labelNom = new Label("Label"+labelNumber);
+            conditionnelle =false;
+            System.out.println("EGALLLLLL");
+            main_methode.addInsn(new Insn(RuntimeConstants.opc_if_icmpeq,labelNom));
+
+        } catch (jasError e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * Ajout de la methode principale (main) a la class principale
@@ -373,6 +438,7 @@ public class CodeGenerateur extends DepthFirstAdapter {
             classPrincipale.addMethod((short)(RuntimeConstants.ACC_STATIC| RuntimeConstants.ACC_PUBLIC),"main","([Ljava/lang/String;)V",main_methode,new ExceptAttr());
 
             classPrincipale.write(new DataOutputStream(new FileOutputStream(nomClass+".class")));
+            Controller.nomClass = nomClass;
 
         } catch (jas.jasError | IOException jasError) {
             jasError.printStackTrace();

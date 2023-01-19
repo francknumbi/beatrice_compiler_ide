@@ -3,6 +3,9 @@ package compilateur.semantique;
 import compilateur.analysis.DepthFirstAdapter;
 import compilateur.node.*;
 import ide.principal.Controller;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +16,18 @@ public class Semantique extends DepthFirstAdapter {
     private ArrayList<String> listeVariables = new ArrayList<>();
     private String[] types = new String[]{"entier","reel","caractere","byte"};
     private String  identifiantCourant =null;
+    public static int erreur = 0;
+
     private ArrayList<String> tables_identifiants = new ArrayList<>();
+    ByteArrayOutputStream nouvelleSortie = new ByteArrayOutputStream();
+    PrintStream nouveauFluxSortie = new PrintStream(nouvelleSortie);
+    PrintStream ancienneSortie = System.out;
+
+    public void inAAlgorithmeProgramme(AAlgorithmeProgramme node)
+    {
+        System.setOut(nouveauFluxSortie);
+    }
+
     /*
     Parcours de l arbre contenant les variables
      */
@@ -46,8 +60,9 @@ public class Semantique extends DepthFirstAdapter {
             for (String identifiant: listeVariables
             ) {
                 if(table_symboles.containsKey(identifiant)){
+                    erreur++;
                     System.out.println("ERREUR DE DECLARATION");
-                    System.exit(0);
+                    break;
                 }
                 else
                     identifiant = identifiant.replaceAll("\\s*","");
@@ -57,8 +72,9 @@ public class Semantique extends DepthFirstAdapter {
         }
         else if(listeVariables.size()==1){
             if (table_symboles.containsKey(listeVariables.get(0))){
+                erreur++;
                 System.out.println("ERREUR DECLARATION");
-                System.exit(0);
+
             }
             else
                 table_symboles.put(listeVariables.get(0).replaceAll("\\s*",""),type.replaceAll("\\s*",""));
@@ -80,8 +96,8 @@ public class Semantique extends DepthFirstAdapter {
 
         if(table_symboles.containsKey(node.getIdentifiant().getText()))
         {
+            erreur++;
             System.out.println("ERREUR DE DECLARATION LA VARIABLE" );
-            System.exit(0);
         }
         if (node.getSuffixe()!=null)
         {
@@ -134,6 +150,11 @@ public class Semantique extends DepthFirstAdapter {
     {
         identifiantCourant = node.getIdentifiant().getText();
     }
+    public void inAIdentifiantTerme(AIdentifiantTerme node)
+    {
+        identifiantCourant = node.getIdentifiant().getText();
+    }
+
     public void outAAffectation(AAffectation node)
     {
         /*
@@ -141,8 +162,8 @@ public class Semantique extends DepthFirstAdapter {
      */
         String identifiantAffectation = node.getIdentifiant().getText();
         if (!table_symboles.containsKey(identifiantAffectation)){
+            erreur++;
             System.out.println("Erreur d initialisation "+ node.getIdentifiant().getText()+"N EST PAS DECLAREE");
-            System.exit(0);
         }
         tables_identifiants.add(identifiantAffectation);
         identifiantCourant =null;
@@ -156,47 +177,52 @@ public class Semantique extends DepthFirstAdapter {
         String identifiantExpression = node.getIdentifiant().getText();
         if (!table_symboles.containsKey(identifiantExpression))
         {
+            erreur++;
             System.out.println("Erreur : la variable " + node.getIdentifiant().getText() +" n est pas declarée");
-            System.exit(0);
         }
         if(!tables_identifiants.contains(identifiantExpression))
         {
+            erreur++;
             System.out.println("Erreur : la variable " + node.getIdentifiant().getText() +" n est pas initialisée");
-            System.exit(0);
+
         }
         /*
             verification de compatibilites de types pour les identifiants pendant l affectation
       */
-        String typeIdentifiantCourant = table_symboles.get(identifiantCourant).replaceAll(" ","");
+
+        String typeIdentifiantCourant = table_symboles.get(identifiantCourant).replaceAll("\\s*","");
         String typeIdendentifiantNoeud = table_symboles.get(identifiantExpression).replaceAll(" ","");
         switch (typeIdentifiantCourant)
         {
+            case "byte" :
             case "entier":
                 if(!typeIdentifiantCourant.equals(typeIdendentifiantNoeud))
                 {
+                    erreur++;
                     System.out.println("Erreur : types non compatibles " + node.getIdentifiant().getText());
-                    System.exit(0);
+                    break;
                 }
                 break;
             case  "reel" :
                 if(typeIdendentifiantNoeud.equals("caractere"))
                 {
+                    erreur++;
                     System.out.println("Erreur : types non compatibles " + node.getIdentifiant().getText());
-                    System.exit(0);
+                    break;
                 }
                 System.out.println("SUccess");
                 break;
             case "caractere" :
                 if(!typeIdentifiantCourant.equals(typeIdendentifiantNoeud))
                 {
+                    erreur++;
                     System.out.println("Erreur : types non compatibles " + identifiantCourant);
-                    System.exit(0);
+                    break;
                 }
                 break;
-            case "byte" :
 
-                break;
         }
+        identifiantCourant =null;
     }
 
     /*
@@ -206,8 +232,8 @@ public class Semantique extends DepthFirstAdapter {
     {
         String idenfiantEcritureMessageAdd = node.getIdentifiant().getText();
         if (!table_symboles.containsKey(idenfiantEcritureMessageAdd)){
+            erreur++;
             System.out.println("Erreur : la variable " +idenfiantEcritureMessageAdd +" n est pas declaree");
-            System.exit(0);
         }
     }
     /*
@@ -217,8 +243,8 @@ public class Semantique extends DepthFirstAdapter {
     {
         String identifiantLecture = node.getIdentifiant().getText();
         if (!table_symboles.containsKey(identifiantLecture)){
+            erreur++;
             System.out.println("Erreur : la variable" +identifiantLecture +" n est pas declaree");
-            System.exit(0);
         }
     }
     /*
@@ -227,11 +253,14 @@ public class Semantique extends DepthFirstAdapter {
     public void outAValeurEntiereTerme(AValeurEntiereTerme node)
     {
         String type = table_symboles.get(identifiantCourant);
-        if(type.equals("caractere"))
-        {
-            System.out.println("Erreur : types non compatibles " + identifiantCourant);
-            System.exit(0);
+        if(type!=null){
+            if(type.equals("caractere"))
+            {
+                erreur++;
+                System.out.println("Erreur : types non compatibles " + identifiantCourant);
+            }
         }
+        System.out.println(node.getNombreEntier().getText());
     }
     public void inAValeurReelTerme(AValeurReelTerme node)
     {
@@ -239,8 +268,8 @@ public class Semantique extends DepthFirstAdapter {
         String type = table_symboles.get(identifiantCourant).replaceAll(" ","");
         if(!type.equals("reel"))
         {
-            System.out.println("Erreur x: types non compatibles " + identifiantCourant);
-            System.exit(0);
+            erreur++;
+            System.out.println("Erreur : types non compatibles " + identifiantCourant);
         }
     }
     public void outAChaineTerme(AChaineTerme node)
@@ -249,8 +278,9 @@ public class Semantique extends DepthFirstAdapter {
         System.out.println();
         if(!type.equals("caractere"))
         {
-            System.out.println("Erreur h : types non compatibles " + identifiantCourant);
-            System.exit(0);
+            erreur++;
+            System.out.println("Erreur : types non compatibles " + identifiantCourant);
+
         }
     }
     public void outAAlgorithmeProgramme(AAlgorithmeProgramme node)
@@ -265,8 +295,8 @@ public class Semantique extends DepthFirstAdapter {
         System.out.println(type);
         if(!type.equals("caractere"))
         {
+            erreur++;
             System.out.println("Erreur h : types non compatibles " + identifiantCourant);
-            System.exit(0);
         }
     }
 

@@ -17,7 +17,7 @@ public class Compilateur {
 
     }
 
-    public void demarrerCompilateur(String texte_caractere) throws ParserException, IOException, LexerException{
+    public void demarrerCompilateur(String texte_caractere) throws ParserException, IOException, LexerException {
 
         InputStream texte_byte = new ByteArrayInputStream(texte_caractere.getBytes());
         System.out.println(texte_byte);
@@ -28,7 +28,11 @@ public class Compilateur {
         Parser syntaxique = new Parser(lexical);
         Start arbre = syntaxique.parse();
         arbre.apply(new Semantique());
-        arbre.apply(new CodeGenerateur());
+
+        if (Semantique.erreur ==0){
+            arbre.apply(new CodeGenerateur());
+        }
+
 
     }
 }

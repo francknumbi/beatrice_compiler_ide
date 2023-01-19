@@ -14,6 +14,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -21,8 +22,10 @@ import java.net.URLClassLoader;
 import java.util.HashMap;
 
 public class Controller {
+    public static String nomClass;
     private int untitledFileNumber;
     private HashMap<String,String> FichiersEnregistrer;
+
     private String cheminDefaut = new File("").getAbsolutePath();
     public static HashMap<String,String> table_symboles = new HashMap<String,String>();
     @FXML
@@ -179,33 +182,36 @@ public class Controller {
         // APPEL DU COMPILATEUR
         new Compilateur().demarrerCompilateur(code_Source.getText());
 
-        // REDIRECTION DU FLUX DE SORTIE
-        ByteArrayOutputStream nouvelleSortie = new ByteArrayOutputStream();
-        PrintStream nouveauFluxSortie = new PrintStream(nouvelleSortie);
-        PrintStream ancienneSortie = System.out;
-        System.setOut(nouveauFluxSortie);
 
-        // REDIRECTION DU FLUX D'ENTREE
-        //Object console = System.console()
-        /*ByteArrayInputStream nouvelleEntree = new ByteArrayInputStream();
-        PrintStream nouveauFluxEntree = new PrintStream(nouvelleSortie);
-        InputStream ancienneEntree = System.in;
-        System.setOut(nouveauFluxSortie);*/
+
 
         // CHARGEMENT DYNAMIQUE DU FICHIER .CLASS
-        Class <?> classChargee = new URLClassLoader(
-                new URL[]{new File("/home/numbi/Documents/tfc/javafx/beatrice_compiler_ide/").toURI().toURL()}).loadClass("affectation");
-        Method methodePrincipale = classChargee.getDeclaredMethod("main", String[].class);
-        methodePrincipale.invoke(methodePrincipale, new Object[]{new String[0]});
+        if(nomClass!=null)
+        {
+            // REDIRECTION DU FLUX DE SORTIE
+            ByteArrayOutputStream nouvelleSortie = new ByteArrayOutputStream();
+            PrintStream nouveauFluxSortie = new PrintStream(nouvelleSortie);
+            PrintStream ancienneSortie = System.out;
+            System.setOut(nouveauFluxSortie);
 
-        // VIDER LA SORTIE ET REPLACER LA SORTIE A LA NORMAL
-        System.out.flush();
-        System.setOut(ancienneSortie);
+            // REDIRECTION DU FLUX D'ENTREE
+            Class <?> classChargee = new URLClassLoader(
+                    new URL[]{new File("/home/numbi/Documents/tfc/javafx/beatrice_compiler_ide/").toURI().toURL()}).loadClass(Controller.nomClass);
+            Method methodePrincipale = classChargee.getDeclaredMethod("main", String[].class);
+            methodePrincipale.invoke(methodePrincipale, new Object[]{new String[0]});
 
-        String sortieConsole = nouvelleSortie.toString();
+            // VIDER LA SORTIE ET REPLACER LA SORTIE A LA NORMAL
+            System.out.flush();
+            System.setOut(ancienneSortie);
 
-        // INSERTION TEXT DANS LA CONSOLE
-        textAreaResultat.setText(sortieConsole);
+            String sortieConsole = nouvelleSortie.toString();
+            // INSERTION TEXT DANS LA CONSOLE
+            textAreaResultat.setText(sortieConsole);
+        }
+
+
+
+
 
         //System.out.println(methodePrincipale);
 

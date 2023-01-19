@@ -129,7 +129,7 @@
                                     <tabs>
                                         <Tab fx:id="Tabconsole" text="RESULTATS">
                                             <content>
-                                                <TextArea fx:id="textAreaResultat" prefWidth="200.0" text=" " wrapText="true" />
+                                                <TextArea fx:id="textAreaResultat"  prefWidth="200.0" text=" " wrapText="true" />
                                             </content>
                                         </Tab>
                                         <Tab fx:id="log" text="Log">
